@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { sleep } from 'k6';
 
 export const options = {
-    vus: 1,
+    vus: 2,
     duration: '5s'
 }
 
@@ -16,7 +16,7 @@ export default function (data) {
 
 export function setup() {
     console.log('-- setup stage --');
-    sleep(10);
+    sleep(3);
     const data = { foo: 'bar' };
     return data;
 }
@@ -24,5 +24,6 @@ export function setup() {
 
 
 export function teardown(data) {
+    sleep(3);
     console.log('-- Teardown stage --');
 }
