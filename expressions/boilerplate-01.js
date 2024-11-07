@@ -7,7 +7,7 @@ import http from 'k6/http';
 import {sleep, check} from 'k6';
 import {Counter} from 'k6/metrics';
 import exec from 'k6/execution';
-import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import {randomIntBetween} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 const httpErrors = new Counter('http_errors');
 const requestCounter = new Counter('request_counter');
@@ -15,7 +15,7 @@ const baseUrl = "";
 
 export const options = {
     vus: 3,
-    duration: '3s',
+    duration: '30s',
     thresholds: {
         http_req_duration: ['p(95)<500'],
         'http_req_duration{status:200}': ['p(95)>5'],
@@ -30,12 +30,15 @@ export const options = {
         checks: ['rate>=0.99'],
         'checks{my_tag: status_200}': ['rate>=0.99'], //tags 사용하려면 threshold 에 값을 지정해야함 → 안하면 결과 메트릭에 출력안됨
         'checks{my_tag: status_201}': ['rate>=0.99'],
+    },
+    tags: {
+        testid: 'boilerplate-01'
     }
 }
 
 export function setup() {
     const res = http.get('https://run.mocky.io/v3/48aa964b-c2db-4c26-9d4e-32c375645467');
-    if(res.error) {
+    if (res.error) {
         exec.test.abort('Aborting test. Application is DOWN');
     }
 
@@ -51,7 +54,7 @@ export default function (status) {
         return;
     }
 
-    let res = http.get('https://run.mocky.io/v3/48aa964b-c2db-4c26-9d4e-32c375645467', {my_tag: "status_200"}); // status 200
+    let res = http.get('https://run.mocky.io/v3/48aa964b-c2db-4c26-9d4e-32c375645467', {tags: {my_tag: "status_200"}}); // status 200
     if (res.error) {
         httpErrors.add(1, {my_tag: "status_200"});
     }
@@ -63,7 +66,7 @@ export default function (status) {
 
     requestCounter.add(1);
 
-    res = http.get('https://run.mocky.io/v3/eaf490cf-ca24-4a34-be67-b43bc4c98321', {my_tag: "status_201"});
+    res = http.get('https://run.mocky.io/v3/eaf490cf-ca24-4a34-be67-b43bc4c98321', {tags: {my_tag: "status_201"}});
     if (res.error) {
         httpErrors.add(1, {my_tag: "status_201"});
     }
