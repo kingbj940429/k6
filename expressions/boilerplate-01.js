@@ -6,6 +6,7 @@
 import http from 'k6/http';
 import {sleep, check} from 'k6';
 import {Counter} from 'k6/metrics';
+import exec from 'k6/execution';
 
 const httpErrors = new Counter('http_errors');
 const requestCounter = new Counter('request_counter');
@@ -18,17 +19,37 @@ export const options = {
         http_req_duration: ['p(95)<500'],
         'http_req_duration{status:200}': ['p(95)>5'],
         'http_req_duration{status:400}': ['p(95)<5'],
+
         http_errors: ['count==0'],
         'http_errors{my_tag: status_200}': ['count==0'],
         'http_errors{my_tag: status_201}': ['count==0'],
+
         request_counter: ['count>5'],
+
         checks: ['rate>=0.99'],
         'checks{my_tag: status_200}': ['rate>=0.99'], //tags 사용하려면 threshold 에 값을 지정해야함 → 안하면 결과 메트릭에 출력안됨
         'checks{my_tag: status_201}': ['rate>=0.99'],
     }
 }
 
-export default function () {
+export function setup() {
+    const res = http.get('https://run.mocky.io/v3/48aa964b-c2db-4c26-9d4e-32c375645467');
+    if(res.error) {
+        exec.test.abort('Aborting test. Application is DOWN');
+    }
+
+    return res.status
+}
+
+export function teardown(status) {
+    console.log(`Tearing down... ${status}`);
+}
+
+export default function (status) {
+    if (status !== 200) {
+        return;
+    }
+
     let res = http.get('https://run.mocky.io/v3/48aa964b-c2db-4c26-9d4e-32c375645467', {my_tag: "status_200"}); // status 200
     if (res.error) {
         httpErrors.add(1, {my_tag: "status_200"});
