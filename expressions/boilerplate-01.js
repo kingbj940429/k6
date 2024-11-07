@@ -7,6 +7,7 @@ import http from 'k6/http';
 import {sleep, check} from 'k6';
 import {Counter} from 'k6/metrics';
 import exec from 'k6/execution';
+import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 const httpErrors = new Counter('http_errors');
 const requestCounter = new Counter('request_counter');
@@ -24,7 +25,7 @@ export const options = {
         'http_errors{my_tag: status_200}': ['count==0'],
         'http_errors{my_tag: status_201}': ['count==0'],
 
-        request_counter: ['count>5'],
+        request_counter: ['count>1'],
 
         checks: ['rate>=0.99'],
         'checks{my_tag: status_200}': ['rate>=0.99'], //tags 사용하려면 threshold 에 값을 지정해야함 → 안하면 결과 메트릭에 출력안됨
@@ -71,5 +72,5 @@ export default function (status) {
         'status is 201': (r) => r.status === 201,
     }, {my_tag: "status_201"});
 
-    sleep(1);
+    sleep(randomIntBetween(1, 5)); // sleep between 1 and 5 seconds.
 }
