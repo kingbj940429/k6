@@ -6,7 +6,7 @@ import exec from 'k6/execution';
 
 const httpErrors = new Counter('http_errors');
 const requestCounter = new Counter('request_counter');
-const baseUrl = "";
+const baseUrl = "https://command-center-server.dev.insight.lunit.io";
 
 export const options = {
     discardResponseBodies: false,
