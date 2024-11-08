@@ -62,17 +62,17 @@ export function setup() {
         exec.test.abort('Aborting test. Unable to get access token');
     }
 
-    return res.status
+    return accessToken
 }
 
-export function teardown(status) {
-    console.log(`Tearing down... ${status}`);
+export function teardown(accessToken) {
+    console.log(`Tearing down... ${accessToken}`);
 }
 
-export default function () {
+export default function (accessToken) {
     group('Health Check', function () {
         let res = http.get(`${baseUrl}/health`, {
-            headers: {'Authorization': `Bearer ${getAccessToken()}`},
+            headers: {'Authorization': `Bearer ${accessToken}`},
         }, {my_tag: "health_check"}); // status 200
         if (res.error) {
             httpErrors.add(1, {my_tag: "health_check"});
@@ -88,7 +88,7 @@ export default function () {
 
     group('List Apps', function () {
         let res = http.get(`${baseUrl}/api/v1/apps`, {
-            headers: {'Authorization': `Bearer ${getAccessToken()}`},
+            headers: {'Authorization': `Bearer ${accessToken}`},
         }, {my_tag: "list_apps"});
 
         check(res, {
@@ -104,7 +104,7 @@ function getAccessToken() {
         client_id: 'command-center',
         grant_type: 'password',
         scope: 'email openid profile roles',
-        username: 'k6-tester@lunit.io',
+        username: __ENV.TESTER_USERNAME || 'k6-tester@lunit.io',
         password: __ENV.PASSWORD,
     };
     const res = http.post('https://keycloak.lunit.in/realms/lunit/protocol/openid-connect/token', data)
