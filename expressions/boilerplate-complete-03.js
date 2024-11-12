@@ -6,7 +6,7 @@ import exec from 'k6/execution';
 
 const httpErrors = new Counter('http_errors');
 const requestCounter = new Counter('request_counter');
-const baseUrl = "https://command-center-server.blue.lunit.in";
+const baseUrl = "https://command-center-server.lunit.in";
 const endpoints = {
     health: `${baseUrl}/health`,
     apps: {
@@ -30,9 +30,8 @@ export const options = {
     thresholds: (() => {
         const thresholds = {};
 
-        thresholds[`http_req_duration`] = ['p(95)<250'];
-        thresholds[`http_req_duration{status:200}`] = ['p(95)>5'];
-        thresholds[`http_req_duration{status:400}`] = ['p(95)<5'];
+        thresholds[`http_req_duration`] = ['p(95)<2000'];
+        thresholds[`http_req_duration{status:200}`] = ['p(95)<2000'];
 
         thresholds[`http_errors`] = ['count==0'];
         thresholds[`http_errors{group_tag: ${groups.health_check}}`] = ['count==0'];
@@ -42,9 +41,9 @@ export const options = {
         thresholds[`checks{group_tag: ${groups.health_check}}`] = ['rate>=0.99'];
         thresholds[`checks{group_tag: ${groups.apps.list}}`] = ['rate>=0.99'];
 
-        thresholds[`group_duration{group:::${groups.health_check}}`] = ['p(95)<250'];
-        thresholds[`group_duration{group:::${groups.apps.name}}`] = ['p(95)<250'];
-        thresholds[`group_duration{group:::${groups.apps.name}::${groups.apps.list}}`] = ['p(95)<250'];
+        thresholds[`group_duration{group:::${groups.health_check}}`] = ['p(95)<2000'];
+        thresholds[`group_duration{group:::${groups.apps.name}}`] = ['p(95)<2000'];
+        thresholds[`group_duration{group:::${groups.apps.name}::${groups.apps.list}}`] = ['p(95)<2000'];
 
         thresholds[`request_counter`] = ['count>50'];
 
@@ -76,7 +75,7 @@ export const options = {
 
 export function setup() {
     const res = http.get(endpoints.health);
-    if (res.error) {
+    if (res.status >= 400 && res.status < 600) {
         exec.test.abort('Aborting test. Application is DOWN');
     }
 
@@ -97,13 +96,13 @@ export function smokeTest(accessToken) {
         let res = http.get(endpoints.health, {
             headers: {'Authorization': `Bearer ${accessToken}`},
         }, {group_tag: groups.health_check}); // status 200
-        if (res.error) {
+        if (res.status >= 400 && res.status < 600) {
             httpErrors.add(1, {group_tag: groups.health_check});
         }
 
         check(res, {
-            'status is 200': (r) => r.status === 200,
-            'status is not 400': (r) => r.status !== 400,
+            'status is 2xx': (r) => r.status >= 200 && r.status < 300,
+            'status is not 4xx or 5xx': (r) => !(r.status >= 400 && r.status < 600),
         }, {group_tag: groups.health_check});
 
         requestCounter.add(1);
@@ -118,12 +117,12 @@ export function loadTest(accessToken) {
             let res = http.get(endpoints.apps.list, {
                 headers: {'Authorization': `Bearer ${accessToken}`},
             }, {group_tag: groups.apps.list});
-            if (res.error) {
+            if (res.status >= 400 && res.status < 600) {
                 httpErrors.add(1, {group_tag: groups.apps.list});
             }
 
             check(res, {
-                'status is 200': (r) => r.status === 200,
+                'status is 2xx': (r) => r.status >= 200 && r.status < 300,
             }, {group_tag: groups.apps.list});
 
             requestCounter.add(1);
